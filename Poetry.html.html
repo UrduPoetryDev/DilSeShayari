@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>شاعری کی دنیا</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #6c5ce7;
+  --secondary: #fd79a8;
+  --card-bg: #ffffff;
+  --text-dark: #2d3436;
+}
+body {
+  margin: 0;
+  font-family: 'Noto Nastaliq Urdu', serif;
+  background: #fdfdfd;
+  color: var(--text-dark);
+}
+header {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+header h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: bold;
+}
+nav {
+  background: #f3f0ff;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+nav a {
+  margin: 5px 10px;
+  text-decoration: none;
+  color: var(--primary);
+  font-weight: bold;
+  font-family: 'Poppins', sans-serif;
+}
+main {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 20px;
+}
+#searchBox {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+.poem-card {
+  background: var(--card-bg);
+  border-right: 5px solid var(--primary);
+  margin-bottom: 15px;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: 0.3s;
+  position: relative;
+}
+.poem-card:hover {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+.poem-text {
+  flex: 1;
+  padding-right: 50px;
+}
+.poem-card h2 {
+  margin-top: 0;
+  color: var(--primary);
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Unique Remove Button Style */
+.remove-btn {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #ff4757;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  font-size: 18px;
+  color: white;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.remove-btn::before {
+  content: "🗑️";
+  font-size: 20px;
+}
+.poem-card:hover .remove-btn {
+  display: flex;
+}
+.remove-btn:hover {
+  background: #d63031;
+  transform: translateY(-50%) scale(1.15);
+}
+#addpoem {
+  background: #f9f2ff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 30px;
+}
+input, textarea, button {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+button.submit-btn {
+  background: var(--primary);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+footer {
+  text-align: center;
+  padding: 15px;
+  margin-top: 30px;
+  background: #f3f0ff;
+  color: var(--primary);
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>شاعری کی دنیا</h1>
+</header>
+
+<nav>
+  <a href="#poems">نظم و شعر</a>
+  <a href="#addpoem">نیا اضافہ</a>
+  <a href="#about">ہمارے بارے میں</a>
+  <a href="#contact">رابطہ</a>
+</nav>
+
+<main>
+  <input type="text" id="searchBox" placeholder="شاعری تلاش کریں..." onkeyup="searchPoems()" />
+
+  <section id="poems">
+    <h2>شاعری</h2>
+    <div id="poem-container"></div>
+  </section>
+
+  <section id="addpoem">
+    <h2>اپنی شاعری شامل کریں (صرف ایڈمن)</h2>
+    <input type="password" id="adminPass" placeholder="پاس ورڈ درج کریں" />
+    <input type="text" id="poemTitle" placeholder="عنوان" />
+    <textarea id="poemContent" rows="4" placeholder="یہاں اپنی شاعری لکھیں..."></textarea>
+    <button class="submit-btn" onclick="addPoem()">شاعری شامل کریں</button>
+  </section>
+
+  <section id="about">
+    <h2>ہمارے بارے میں</h2>
+    <p>یہ ویب سائٹ شاعری کے شوقین افراد کے لیے ہے، تاکہ وہ اپنی تخلیقات دوسروں کے ساتھ شئیر کر سکیں۔ تاہم شاعری صرف ایڈمن شامل یا حذف کر سکتا ہے۔</p>
+  </section>
+
+  <section id="contact">
+    <h2>رابطہ</h2>
+    <p>ای میل: <a href="mailto:other7506@gmail.com">other7506@gmail.com</a></p>
+  </section>
+</main>
+
+<footer>&copy; 2025 شاعری کی دنیا۔ تمام حقوق محفوظ ہیں۔</footer>
+
+<script>
+const ADMIN_PASSWORD = "Ego";
+
+// Local Storage سے poems لوڈ کریں
+window.onload = function(){
+  let poems = JSON.parse(localStorage.getItem("poems")) || [];
+  poems.forEach(p => renderPoem(p.title, p.content));
+};
+
+function addPoem(){
+  const pass = document.getElementById('adminPass').value;
+  if(pass !== ADMIN_PASSWORD){ alert("غلط پاس ورڈ!"); return; }
+
+  const title = document.getElementById('poemTitle').value.trim();
+  const content = document.getElementById('poemContent').value.trim();
+
+  if(title && content){
+    // Local Storage میں Save کریں
+    let poems = JSON.parse(localStorage.getItem("poems")) || [];
+    poems.unshift({title, content});
+    localStorage.setItem("poems", JSON.stringify(poems));
+
+    renderPoem(title, content, true);
+
+    document.getElementById('poemTitle').value = '';
+    document.getElementById('poemContent').value = '';
+    alert('شاعری شامل کر دی گئی!');
+  } else { alert('براہ کرم عنوان اور شاعری دونوں درج کریں۔'); }
+}
+
+function renderPoem(title, content, prepend=false){
+  const container = document.getElementById('poem-container');
+  const card = document.createElement('div');
+  card.className = 'poem-card';
+  card.innerHTML = `
+    <div class="poem-text">
+      <h2>${title}</h2>
+      <p>${content.replace(/\n/g,"<br>")}</p>
+    </div>
+    <button class="remove-btn" onclick="removePoem(this,'${title}')"></button>`;
+  
+  if(prepend) container.prepend(card); else container.appendChild(card);
+}
+
+function removePoem(btn, title){
+  const pass = prompt("شاعری حذف کرنے کے لیے پاس ورڈ درج کریں:");
+  if(pass === ADMIN_PASSWORD){
+    btn.parentElement.remove();
+
+    // Local Storage سے Delete کریں
+    let poems = JSON.parse(localStorage.getItem("poems")) || [];
+    poems = poems.filter(p => p.title !== title);
+    localStorage.setItem("poems", JSON.stringify(poems));
+  } else alert("غلط پاس ورڈ!");
+}
+
+function searchPoems(){
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  document.querySelectorAll('.poem-card').forEach(pc => {
+    pc.style.display = pc.innerText.toLowerCase().includes(q) ? "flex" : "none";
+  });
+}
+</script>
+
+</body>
+</html>
