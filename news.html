@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Poetry Video Maker — Urdu</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap" rel="stylesheet">
+<style>
+  body{ margin:0; font-family: 'Noto Nastaliq Urdu', serif; background:#081331; color:#fff; }
+  .app{ max-width:1100px; margin:18px auto; display:flex; gap:16px; padding:12px; }
+  .left{ width:360px; }
+  .panel{ background:#0f1720cc; padding:12px; border-radius:10px; margin-bottom:12px; }
+  label{ display:block; margin:8px 0 6px; font-weight:700; }
+  textarea, input { width:100%; padding:8px; border-radius:6px; border:1px solid #2a3650; background:transparent; color:#fff; }
+  textarea{ min-height:120px; resize:vertical; font-size:18px; line-height:1.6; text-align:center; }
+  .btn{ background:#6c5ce7; color:white; border:none; padding:10px 12px; border-radius:8px; cursor:pointer; margin:6px 4px; font-weight:700;}
+  #stage{ width:720px; height:1280px; background:#000; border-radius:12px; overflow:hidden; position:relative; }
+  .bgImage{ position:absolute; inset:0; background-size:cover; background-position:center; }
+  .textLayer{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; padding:30px; text-align:center; }
+  .line{ color:white; font-size:44px; line-height:1.4; opacity:0; transform:translateY(18px); text-shadow:0 6px 26px rgba(0,0,0,0.6); }
+  @keyframes fadeUp { from{opacity:0; transform:translateY(24px);} to{opacity:1; transform:translateY(0);} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="left">
+    <div class="panel">
+      <label>شاعری</label>
+      <textarea id="poemText">یہ دنیا اک لمحہ ہے
+یہ دل اک فسانہ ہے</textarea>
+    </div>
+    <div class="panel">
+      <label>پس منظر تصویر</label>
+      <input type="file" id="bgFile" accept="image/*">
+      <label>پس منظر موسیقی</label>
+      <input type="file" id="audioFile" accept="audio/*">
+    </div>
+    <div class="panel">
+      <button class="btn" id="previewBtn">Preview</button>
+      <button class="btn" id="recordBtn">Start Recording</button>
+      <button class="btn" id="stopBtn" disabled>Stop</button>
+      <button class="btn" id="downloadBtn" disabled>Download</button>
+      <div id="status">Status: Ready</div>
+    </div>
+  </div>
+
+  <div>
+    <div id="stage">
+      <div class="bgImage" id="bgImage"></div>
+      <div class="textLayer" id="textLayer"></div>
+    </div>
+    <audio id="bgAudio"></audio>
+  </div>
+</div>
+
+<script>
+const poemText=document.getElementById("poemText");
+const bgFile=document.getElementById("bgFile");
+const audioFile=document.getElementById("audioFile");
+const bgImage=document.getElementById("bgImage");
+const textLayer=document.getElementById("textLayer");
+const bgAudio=document.getElementById("bgAudio");
+const status=document.getElementById("status");
+const previewBtn=document.getElementById("previewBtn");
+const recordBtn=document.getElementById("recordBtn");
+const stopBtn=document.getElementById("stopBtn");
+const downloadBtn=document.getElementById("downloadBtn");
+const stage=document.getElementById("stage");
+
+let mediaRecorder, recordedBlobs=[], currentBlobUrl=null;
+
+function setStatus(s){status.textContent="Status: "+s;}
+
+// Background image
+bgFile.addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const url=URL.createObjectURL(f);
+  bgImage.style.backgroundImage=`url(${url})`;
+});
+
+// Audio
+audioFile.addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  bgAudio.src=URL.createObjectURL(f);
+});
+
+// Build lines
+function buildLines(){
+  textLayer.innerHTML="";
+  let lines=poemText.value.trim().split("\n").filter(l=>l);
+  lines.forEach((ln,i)=>{
+    let d=document.createElement("div");
+    d.className="line";
+    d.textContent=ln;
+    d.style.animation=`fadeUp 2s ease forwards`;
+    d.style.animationDelay=`${i*3}s`;
+    textLayer.appendChild(d);
+  });
+  return lines;
+}
+
+// Preview
+previewBtn.onclick=()=>{
+  let lines=buildLines();
+  if(!lines.length) return;
+  if(bgAudio.src) bgAudio.play().catch(()=>setStatus("Click to allow audio"));
+  setStatus("Preview running...");
+};
+
+// Recording
+recordBtn.onclick=async()=>{
+  let lines=buildLines(); if(!lines.length) return;
+  let fps=30;
+  let stream=stage.captureStream(fps);
+
+  // Merge audio
+  if(bgAudio.src){
+    let ctx=new AudioContext();
+    let source=ctx.createMediaElementSource(bgAudio);
+    let dest=ctx.createMediaStreamDestination();
+    source.connect(ctx.destination);
+    source.connect(dest);
+    bgAudio.currentTime=0; bgAudio.play();
+    dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+  }
+
+  recordedBlobs=[];
+  mediaRecorder=new MediaRecorder(stream,{mimeType:"video/webm;codecs=vp8,opus"});
+  mediaRecorder.ondataavailable=e=>{if(e.data.size) recordedBlobs.push(e.data);};
+  mediaRecorder.onstop=()=>{
+    let blob=new Blob(recordedBlobs,{type:"video/webm"});
+    if(currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+    currentBlobUrl=URL.createObjectURL(blob);
+
+    // Auto download
+    let a=document.createElement("a");
+    a.href=currentBlobUrl;
+    a.download="poetry_video.webm";
+    a.click();
+
+    // Enable manual download
+    downloadBtn.disabled=false;
+    downloadBtn.onclick=()=>{
+      let a2=document.createElement("a");
+      a2.href=currentBlobUrl;
+      a2.download="poetry_video.webm";
+      a2.click();
+    };
+
+    setStatus("Recording finished — video downloaded");
+  };
+
+  mediaRecorder.start();
+  recordBtn.disabled=true; stopBtn.disabled=false;
+  setStatus("Recording...");
+
+  // auto-stop after (lines.length*3)+2 sec
+  setTimeout(()=>{
+    if(mediaRecorder.state==="recording") mediaRecorder.stop();
+    stopBtn.disabled=true; recordBtn.disabled=false;
+  }, lines.length*3000+2000);
+};
+
+// Manual stop
+stopBtn.onclick=()=>{
+  if(mediaRecorder && mediaRecorder.state==="recording") mediaRecorder.stop();
+  stopBtn.disabled=true; recordBtn.disabled=false;
+};
+</script>
+</body>
+</html>
